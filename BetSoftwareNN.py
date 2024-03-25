@@ -36,35 +36,35 @@ class BTSPredictNeuralNetwork:
             tf.keras.Sequential: Compiled model ready for training.
         """
 
-        # Initialiser le modèle séquentiel
+        # Initialize the sequential model
         model = tf.keras.Sequential()
 
-        # Ajouter la couche d'entrée (Remplacez shape avec votre forme d'entrée réelle)
+        # Add the input layer (Replace shape with your actual input shape)
         model.add(tf.keras.layers.InputLayer(input_shape=(4, 10, 21)))
 
-        # Ajouter une couche de convolution avec 32 filtres, une taille de noyau de 3x3 et une activation ReLU
+        # Add a convolutional layer with 32 filters, a kernel size of 3x3, and ReLU activation
         model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu'))
 
-        # Ajouter une couche de pooling pour réduire la dimensionnalité
+        # Add a pooling layer to reduce dimensionality
         model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
 
         model.add(tf.keras.layers.Flatten())
         
-        # Couche LSTM bidirectionnelle pour capturer les dépendances temporelles
+        # Bidirectional LSTM layer to capture temporal dependencies
         model.add(tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=128)))
 
-        # Couche dense pour la classification
+        # Dense layer for classification
         for _ in range(7):
             model.add(tf.keras.layers.Dense(128, activation='relu', kernel_initializer='he_normal'))
             model.add(tf.keras.layers.Dropout(0.15))
 
-        # Couche de sortie avec activation sigmoid pour la classification binaire
+        # Output layer with sigmoid activation for binary classification
         model.add(tf.keras.layers.Dense(1, activation='sigmoid', kernel_initializer='glorot_uniform'))
 
-        # Compiler le modèle avec la fonction de perte binary_crossentropy
+        # Compile the model with binary_crossentropy loss function
         model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-        # Afficher les valeurs de x à chaque étape
+        # Print the model summary
         model.summary()
 
         return model
