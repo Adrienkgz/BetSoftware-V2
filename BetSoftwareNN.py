@@ -7,6 +7,8 @@ import data
 import tensorflow as tf
 import numpy as np
 import os
+from keras.layers import TimeDistributed
+from keras.layers import LSTMCell, RNN, LSTM
 
 FILE_PATH_WEIGHT_BTSNN = "WeightBetsoftwareAIV1.h5"
 
@@ -35,43 +37,46 @@ class BTSPredictNeuralNetwork:
         Returns:
             tf.keras.Sequential: Compiled model ready for training.
         """
+        input_shape = (4, 10, 21)  # (num_lists, num_matches, num_stats)
 
-        # Initialize the sequential model
-        model = tf.keras.Sequential()
+        # Define the LSTM layer
+        lstm_layer = tf.keras.layers.LSTM(units=16, return_sequences=True)
 
-        # Add the input layer (Replace shape with your actual input shape)
-        model.add(tf.keras.layers.InputLayer(input_shape=(4, 10, 21)))
+        # Define the input layer
+        input_layer = tf.keras.layers.Input(shape=input_shape)
 
-        # Add a convolutional layer with 32 filters, a kernel size of 3x3, and ReLU activation
-        model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu'))
+        # Process each list of matches separately
+        lstm_outputs = []
+        for i in range(input_shape[0]):
+            lstm_output = lstm_layer(input_layer[:, i, :, :])
+            lstm_outputs.append(lstm_output)
 
-        # Add a pooling layer to reduce dimensionality
-        model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
-
-        model.add(tf.keras.layers.Flatten())
+        # Concatenate the outputs
+        concatenated_output = tf.keras.layers.Concatenate()(lstm_outputs)
         
-        # Bidirectional LSTM layer to capture temporal dependencies
-        model.add(tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=128)))
+        x = tf.keras.layers.Dense(256, activation='relu')(concatenated_output[:, 0, :])
+        
+        for _ in range(50):
+            x = tf.keras.layers.Dense(256, activation='relu')(x)
+            x = tf.keras.layers.Dropout(0.2)(x)
+        
+        
+        # Define the output layer
+        output_layer = tf.keras.layers.Dense(2, activation='softmax')(x)
 
-        # Dense layer for classification
-        for _ in range(7):
-            model.add(tf.keras.layers.Dense(128, activation='relu', kernel_initializer='he_normal'))
-            model.add(tf.keras.layers.Dropout(0.15))
+        # Define the model
+        model = tf.keras.models.Model(inputs=input_layer, outputs=output_layer)
 
-        # Output layer with sigmoid activation for binary classification
-        model.add(tf.keras.layers.Dense(1, activation='sigmoid', kernel_initializer='glorot_uniform'))
-
-        # Compile the model with binary_crossentropy loss function
+        # Compile the model
         model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-        # Print the model summary
-        model.summary()
 
         return model
+    
 
     def train(self, x_training, y_training):
-        early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-        self.model.fit(x_training, y_training, verbose=0, epochs=10, batch_size=256, validation_split=0.2, use_multiprocessing=False, callbacks=[early_stopping])
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        self.model.fit(x_training, y_training, verbose=1, epochs=100, batch_size=256, validation_split=0.2, use_multiprocessing=False, callbacks=[early_stopping])
         
     def predict(self, x):
         
@@ -85,54 +90,50 @@ class BTSPredictNeuralNetwork:
             
         list_matchs = league.get_list_matches()
         true_prediction, score, compteur_prediction = 0, 0, 0
-                    
+        
         for match in list_matchs:
-            prediction = self.is_this_match_will_have_bts(match, matches_list_league=list_matchs)
-            if prediction is None:
+            have_good_prediction_bool = self.is_nn_have_good_predict(match, matches_list_league=list_matchs)
+            if have_good_prediction_bool is None:
                 continue
             compteur_prediction += 1
             score -= 1
-            if prediction:
-                if match.get_bts():
+            if have_good_prediction_bool:
+                if match.get_bts() == 1:
                     true_prediction += 1
                     score += match.bts_yes_odd
-            else:
-                if not match.get_bts():
+                else:
                     true_prediction += 1
                     score += match.bts_no_odd
         
         print(f"Test de la league {league.get_league_name()} pour la saison {league.get_season()} :")
-        print(f"Pourcentage de prédiction juste : {true_prediction/compteur_prediction*100}%")
-        print(f"Score : {score}")
+        print(f"Pourcentage de prédiction juste : {true_prediction/compteur_prediction*100:.2f}%")
+        print(f"Score : {score:.2f}")
+        return score
     
-    def is_this_match_will_have_bts(self, match, matches_list_league=[]):
+    def is_nn_have_good_predict(self, match, matches_list_league=[]):
         x, y_true = match.get_input_output(matches_list_league=matches_list_league)
         if x == []:
             return None
-        y_predict = self.predict(np.array([x]))
-        if y_predict > 0.5:
-            return True
-        else:
-            return False
+        y_predict = self.predict(np.array([x]))[0]
+        if y_predict[0] > 0.5: # L'ia prédit que le match ne sera pas BTS
+            return True if y_true == [1, 0] else False
+        else: # L'ia prédit que le match sera BTS
+            return True if y_true == [0, 1] else False
         
 nn = BTSPredictNeuralNetwork(42) #
 
-list_league_to_test = ['BL20222023', 
-                       'PL20222023', 
-                       'LIGA20222023', 
-                       'SerieA20222023', 
-                       'L120222023', 
-                       'EREDIVISIE20222023', 
-                       'EREDIVISIE20212022', 
-                       'EREDIVISIE20202021', 
-                       'PL20232024',
+list_league_to_test = ['PL20232024',
                        'LIGA20232024',
                        'SerieA20232024',
                        'BL20232024',
                        'L120232024']
 x, y = data.get_all_datas(list_league_to_exclude=list_league_to_test)
+print(x.shape)
 #nn.load_weight()
-nn.model.fit(x=x, y=y, epochs=10, batch_size=256, validation_split=0.2, use_multiprocessing=True, verbose=1)
+nn.train(x, y)
+score_total = 0
 for league in list_league_to_test:
-    nn.test_this_league(league)
+    score_total += nn.test_this_league(league)
+    
+print(f"Score total : {score_total:.2f}")
     

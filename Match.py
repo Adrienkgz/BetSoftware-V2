@@ -292,7 +292,18 @@ class Match:
         return X_inter
     
     def get_input_output(self, n:int = 10, matches_list_league:list = [], only_input:bool = False):
-        
+        """
+        Returns the input and output data for the match.
+
+        Parameters:
+        - n (int): Number of last matches to consider.
+        - matches_list_league (list): List of matches in the league.
+        - only_input (bool): Flag indicating whether to return only the input data.
+
+        Returns:
+        - X_input (list): List of input data.
+        - output (list): List of output data. [0, 1] if both teams scored, [1, 0] otherwise.
+        """
         # Get the last n matches for the home team at home, away team at away, home_team in general, and away team in general
         last_home_team_matches_at_home, last_home_team_matches_general, last_away_team_matches_at_away, last_away_team_matches_general = self.get_n_last_matches(n, matches_list_league)
         
@@ -313,7 +324,6 @@ class Match:
             X_inter.append(match.get_X_input_intermediaire(self.away_team))
         X_input.append(X_inter) 
         X_inter = []
-
 
         # Add the input for the home team in general
         for match in last_home_team_matches_general:
@@ -336,7 +346,7 @@ class Match:
         # Add the output
         
         if not only_input:
-            output = [1 if self.get_bts() else 0]
+            output = [0, 1] if self.get_bts() else [1, 0]
         else:
             output = []
         return X_input, output
