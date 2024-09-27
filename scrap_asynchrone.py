@@ -665,8 +665,7 @@ async def main():
     print("Temps écoulé:", temps_ecoule, "secondes")
 #League(ID_League='BL20152016', isdone=True, forebet_url="https://www.forebet.com/fr/previsions-de-football-pour-allemagne/bundesliga/results/2015-2016", time_zone_difference=0),
                       
-list_league_to_add = [League(ID_League='PL20232024', isdone=False, forebet_url="https://www.forebet.com/fr/previsions-de-football-pour-angleterre/premier-league/results/2023-2024", time_zone_difference=1),
-                      League(ID_League='LIGA20232024', isdone=False, forebet_url="https://www.forebet.com/fr/previsions-de-football-pour-espagne/primera-division/results/2023-2024", time_zone_difference=0),
+list_league_to_add = [League(ID_League='LIGA20232024', isdone=False, forebet_url="https://www.forebet.com/fr/previsions-de-football-pour-espagne/primera-division/results/2023-2024", time_zone_difference=0),
                       League(ID_League='L120232024', isdone=False, forebet_url="https://www.forebet.com/fr/previsions-de-football-pour-france/league1/results/2023-2024", time_zone_difference=0),
                       League(ID_League='BL20232024', isdone=False, forebet_url="https://www.forebet.com/fr/previsions-de-football-pour-allemagne/bundesliga/results/2023-2024", time_zone_difference=0),
                       League(ID_League='SerieA20232024', isdone=False, forebet_url="https://www.forebet.com/fr/previsions-de-football-pour-italie/seriea/results/2023-2024", time_zone_difference=0)]

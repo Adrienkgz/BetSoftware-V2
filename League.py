@@ -10,6 +10,10 @@ class League:
     forebet_url:str = ''
     time_zone_difference:int = 0
     update_database = True
+    list_matches = []
+    
+    def __post_init__(self):
+        self.list_matches = self.get_list_matches()
         
     def get_season(self):
         return self.ID_League[-8:]
@@ -24,9 +28,10 @@ class League:
         
     def get_list_matches(self):
         matches_tuple = dbManager.apply_request_to_database(f"SELECT * FROM Matchs WHERE id_league = '{self.ID_League}' ORDER BY matchday ASC;")
-        return [Match(*match) for match in matches_tuple]
+        self.list_matches = [Match(*match, self) for match in matches_tuple]
+        return self.list_matches
     
-    def get_input_output_datas(self, n:int=10, show_progress:bool = False) -> list:
+    def get_input_output_datas(self, desired_output:str, n:int=10, show_progress:bool = False) -> list:
         """Get the datas input for this league
 
         Args:
@@ -36,15 +41,13 @@ class League:
             list: The datas input for this league
         """
         
-        matches_list = self.get_list_matches()
+        matches_list = self.list_matches
         matches_list_with_data = []
         #On récupère les données
         input_datas_set, output_datas_set = [], []
         progress_bar = tqdm(matches_list) if show_progress else matches_list
         for match in progress_bar:
-            if match.home_team == "Sevilla FC" and match.away_team == "Deportivo Alavés":
-                print()
-            match_input, match_output = match.get_input_output(n, matches_list)
+            match_input, match_output = match.get_input_output(desired_output=desired_output, matches_list_league=matches_list, n=n)
             if match_input == []:
                 continue
             

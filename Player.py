@@ -78,7 +78,8 @@ class Player:
             
             # Add the player into the play_in table if they are not already present
             if dbManager.apply_request_to_database(f"SELECT COUNT(*) FROM play_in WHERE id_player = {self.id_player} AND id_match = {match.index}")[0][0] == 0:
-                dbManager.apply_request_to_database(f"INSERT INTO play_in VALUES ({self.id_match}, {self.id_player}, {self.sub_in}, {self.sub_out}, {self.starter}, '{self.football_position}', {self.total_shot}, {self.shot_og}, {self.goals}, {self.assists}, {self.fouls_commited}, {self.fouls_drawn}, {self.offsides}, {self.penalty_miss}, {self.penalty_score}, {self.yellow_cards}, {self.red_cards}, {self.saves}, '{self.team}')")
+                self.team = self.team.replace("'", "")
+                dbManager.apply_request_to_database(f"INSERT INTO play_in VALUES ({self.id_match}, {self.id_player}, {self.sub_in}, {self.sub_out}, {int(self.starter)}, '{self.football_position}', {self.total_shot}, {self.shot_og}, {self.goals}, {self.assists}, {self.fouls_commited}, {self.fouls_drawn}, {self.offsides}, {self.penalty_miss}, {self.penalty_score}, {self.yellow_cards}, {self.red_cards}, {self.saves}, '{self.team}')")
             
             dbManager.commit()
         except Exception as e:
